@@ -35,3 +35,14 @@ export function diffEnvMaps(
 
   return result;
 }
+
+/**
+ * Returns true if the diff result has no differences (no added, removed, or changed keys).
+ */
+export function isCleanDiff(diff: DiffResult): boolean {
+  return (
+    Object.keys(diff.onlyInA).length === 0 &&
+    Object.keys(diff.onlyInB).length === 0 &&
+    Object.keys(diff.changed).length === 0
+  );
+}
