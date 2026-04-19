@@ -19,15 +19,9 @@ export function registerMaskCommand(program: Command): void {
         if (options.all) maskOptions.all = true;
         if (options.keys) maskOptions.keys = options.keys.split(',').map((k: string) => k.trim());
 
-        const maskedEntries: DiffEntry[] = result.entries.map((entry) => ({
-          ...entry,
-          stagingValue: entry.stagingValue
-            ? maskEnvMap({ v: entry.stagingValue }, maskOptions).v
-            : undefined,
-          productionValue: entry.productionValue
-            ? maskEnvMap({ v: entry.productionValue }, maskOptions).v
-            : undefined,
-        }));
+        const maskedEntries: DiffEntry[] = result.entries.map((entry) =>
+          maskDiffEntry(entry, maskOptions)
+        );
 
         const maskedResult = { ...result, entries: maskedEntries };
 
@@ -41,4 +35,22 @@ export function registerMaskCommand(program: Command): void {
         process.exit(1);
       }
     });
+}
+
+/**
+ * Applies masking to the staging and production values of a single DiffEntry.
+ */
+function maskDiffEntry(
+  entry: DiffEntry,
+  maskOptions: { all?: boolean; keys?: string[] }
+): DiffEntry {
+  return {
+    ...entry,
+    stagingValue: entry.stagingValue
+      ? maskEnvMap({ v: entry.stagingValue }, maskOptions).v
+      : undefined,
+    productionValue: entry.productionValue
+      ? maskEnvMap({ v: entry.productionValue }, maskOptions).v
+      : undefined,
+  };
 }
