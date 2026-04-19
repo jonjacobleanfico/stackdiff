@@ -46,3 +46,14 @@ export function isCleanDiff(diff: DiffResult): boolean {
     Object.keys(diff.changed).length === 0
   );
 }
+
+/**
+ * Returns a summary of the diff result as a human-readable string.
+ */
+export function summarizeDiff(diff: DiffResult): string {
+  const added = Object.keys(diff.onlyInB).length;
+  const removed = Object.keys(diff.onlyInA).length;
+  const changed = Object.keys(diff.changed).length;
+  const unchanged = Object.keys(diff.unchanged).length;
+  return `${added} added, ${removed} removed, ${changed} changed, ${unchanged} unchanged`;
+}
