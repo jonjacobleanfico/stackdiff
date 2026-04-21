@@ -40,6 +40,13 @@ describe('exportDiff', () => {
     expect(lines).toHaveLength(3); // header + 2 non-unchanged
   });
 
+  it('exports csv format with all entries when includeUnchanged is true', () => {
+    const result = exportDiff(sampleDiff, { format: 'csv', includeUnchanged: true });
+    const lines = result.split('\n');
+    expect(lines[0]).toBe('key,status,staging,production');
+    expect(lines).toHaveLength(4); // header + 3 entries
+  });
+
   it('writes output to file when outputPath is provided', () => {
     const tmpFile = path.join(os.tmpdir(), `stackdiff-test-${Date.now()}.json`);
     exportDiff(sampleDiff, { format: 'json', outputPath: tmpFile });
@@ -47,5 +54,10 @@ describe('exportDiff', () => {
     const content = fs.readFileSync(tmpFile, 'utf-8');
     expect(JSON.parse(content).entries).toBeDefined();
     fs.unlinkSync(tmpFile);
+  });
+
+  it('throws when outputPath directory does not exist', () => {
+    const invalidPath = path.join(os.tmpdir(), 'nonexistent-dir', 'output.json');
+    expect(() => exportDiff(sampleDiff, { format: 'json', outputPath: invalidPath })).toThrow();
   });
 });
