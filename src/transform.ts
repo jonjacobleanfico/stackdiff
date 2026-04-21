@@ -16,10 +16,16 @@ export function buildTransformFn(rule: TransformRule): TransformFn {
     case 'lowercase-keys':
       return (k, v) => ({ key: k.toLowerCase(), value: v });
     case 'prefix-keys':
-      return (k, v) => ({ key: `${rule.arg ?? ''}${k}`, value: v });
+      if (!rule.arg) {
+        throw new Error(`TransformRule 'prefix-keys' requires a non-empty 'arg' value`);
+      }
+      return (k, v) => ({ key: `${rule.arg}${k}`, value: v });
     case 'strip-prefix':
+      if (!rule.arg) {
+        throw new Error(`TransformRule 'strip-prefix' requires a non-empty 'arg' value`);
+      }
       return (k, v) => ({
-        key: k.startsWith(rule.arg ?? '') ? k.slice((rule.arg ?? '').length) : k,
+        key: k.startsWith(rule.arg!) ? k.slice(rule.arg!.length) : k,
         value: v,
       });
     case 'trim-values':
