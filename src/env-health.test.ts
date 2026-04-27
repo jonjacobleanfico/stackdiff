@@ -4,87 +4,79 @@ import {
   checkDuplicateValues,
   computeHealthScore,
   resolveOverallStatus,
-  buildHealthReport,
-  formatHealthReport,
-} from './env-health';
+} from "./env-health";
 
-const staging = { API_URL: 'http://staging.api', DB_HOST: 'db-staging', SECRET: 'abc' };
-const production = { API_URL: 'http://prod.api', DB_HOST: 'db-prod', SECRET: 'xyz' };
+const baseMap: Record<string, string> = {
+  API_KEY: "abc123",
+  DB_HOST: "localhost",
+  DB_PORT: "5432",
+  SECRET: "mysecret",
+  CACHE_URL: "redis://localhost",
+};
 
-describe('checkMissingKeys', () => {
-  it('returns healthy when no keys are missing', () => {
-    const result = checkMissingKeys(staging, production);
-    expect(result.status).toBe('healthy');
+describe("checkMissingKeys", () => {
+  it("returns empty array when all required keys present", () => {
+    const result = checkMissingKeys(baseMap, ["API_KEY", "DB_HOST"]);
+    expect(result).toEqual([]);
   });
 
-  it('returns warning when a few keys are missing', () => {
-    const result = checkMissingKeys({ ...staging, EXTRA: 'val' }, production);
-    expect(result.status).toBe('warning');
-    expect(result.message).toContain('EXTRA');
-  });
-
-  it('returns critical when many keys are missing', () => {
-    const extra: Record<string, string> = {};
-    for (let i = 0; i < 6; i++) extra[`KEY_${i}`] = `val_${i}`;
-    const result = checkMissingKeys({ ...staging, ...extra }, production);
-    expect(result.status).toBe('critical');
+  it("returns missing keys", () => {
+    const result = checkMissingKeys(baseMap, ["API_KEY", "MISSING_KEY"]);
+    expect(result).toContain("MISSING_KEY");
+    expect(result).not.toContain("API_KEY");
   });
 });
 
-describe('checkEmptyValues', () => {
-  it('returns healthy when no empty values', () => {
-    const result = checkEmptyValues(staging, 'staging');
-    expect(result.status).toBe('healthy');
+describe("checkEmptyValues", () => {
+  it("detects empty string values", () => {
+    const map = { ...baseMap, EMPTY_VAR: "", BLANK: "   " };
+    const result = checkEmptyValues(map);
+    expect(result).toContain("EMPTY_VAR");
+    expect(result).toContain("BLANK");
+    expect(result).not.toContain("API_KEY");
   });
 
-  it('returns warning when empty values exist', () => {
-    const result = checkEmptyValues({ ...staging, EMPTY_KEY: '' }, 'staging');
-    expect(result.status).toBe('warning');
-    expect(result.message).toContain('EMPTY_KEY');
-  });
-});
-
-describe('checkDuplicateValues', () => {
-  it('returns healthy when no duplicate values', () => {
-    const result = checkDuplicateValues(production);
-    expect(result.status).toBe('healthy');
-  });
-
-  it('returns warning when duplicate values found', () => {
-    const result = checkDuplicateValues({ A: 'same', B: 'same', C: 'other' });
-    expect(result.status).toBe('warning');
+  it("returns empty array when no empty values", () => {
+    expect(checkEmptyValues(baseMap)).toEqual([]);
   });
 });
 
-describe('computeHealthScore', () => {
-  it('returns 100 for all healthy checks', () => {
-    const checks = [{ name: 'a', status: 'healthy' as const, message: '' }];
-    expect(computeHealthScore(checks)).toBe(100);
+describe("checkDuplicateValues", () => {
+  it("detects duplicate values across keys", () => {
+    const map = { A: "same", B: "same", C: "unique" };
+    const result = checkDuplicateValues(map);
+    expect(result.some((g) => g.includes("A") && g.includes("B"))).toBe(true);
   });
 
-  it('deducts points for warnings and criticals', () => {
-    const checks = [
-      { name: 'a', status: 'warning' as const, message: '' },
-      { name: 'b', status: 'critical' as const, message: '' },
-    ];
-    expect(computeHealthScore(checks)).toBe(60);
+  it("returns empty array when all values unique", () => {
+    expect(checkDuplicateValues(baseMap)).toEqual([]);
   });
 });
 
-describe('buildHealthReport', () => {
-  it('returns healthy report for matching envs', () => {
-    const report = buildHealthReport(staging, production);
-    expect(report.status).toBe('healthy');
-    expect(report.score).toBe(100);
-    expect(report.checks.length).toBeGreaterThan(0);
+describe("computeHealthScore", () => {
+  it("returns 100 for a clean env map", () => {
+    const score = computeHealthScore(baseMap, Object.keys(baseMap));
+    expect(score).toBe(100);
+  });
+
+  it("reduces score for missing and empty keys", () => {
+    const map = { API_KEY: "", DB_HOST: "localhost" };
+    const score = computeHealthScore(map, ["API_KEY", "DB_HOST", "MISSING"]);
+    expect(score).toBeLessThan(100);
   });
 });
 
-describe('formatHealthReport', () => {
-  it('includes status and score', () => {
-    const report = buildHealthReport(staging, production);
-    const output = formatHealthReport(report);
-    expect(output).toContain('HEALTHY');
-    expect(output).toContain('100/100');
+describe("resolveOverallStatus", () => {
+  it("returns healthy for score >= 90", () => {
+    expect(resolveOverallStatus(100)).toBe("healthy");
+    expect(resolveOverallStatus(90)).toBe("healthy");
+  });
+
+  it("returns warning for score 70-89", () => {
+    expect(resolveOverallStatus(80)).toBe("warning");
+  });
+
+  it("returns critical for score < 70", () => {
+    expect(resolveOverallStatus(50)).toBe("critical");
   });
 });
