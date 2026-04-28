@@ -57,3 +57,17 @@ export function resolvedToMap(result: ResolveResult): Map<string, string> {
   }
   return out;
 }
+
+/**
+ * Returns all entries from a ResolveResult that originated from a specific source.
+ * Useful for auditing which keys came exclusively from staging or production,
+ * or which keys were overridden by production.
+ */
+export function filterBySource(
+  result: ResolveResult,
+  source: ResolveSource
+): ResolvedEntry[] {
+  return Array.from(result.resolved.values()).filter(
+    (entry) => entry.source === source
+  );
+}
