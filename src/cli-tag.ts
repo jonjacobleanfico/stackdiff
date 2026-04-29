@@ -31,6 +31,10 @@ export function registerTagCommand(program: Command): void {
       const tagDefs = parseTagDefs(opts.defs);
       const entries = tagEnvMap(env, tagDefs);
       const selectedTags = opts.tags.split(',').map(t => t.trim()).filter(Boolean);
+      if (selectedTags.length === 0) {
+        console.error('Error: --tags option must include at least one tag.');
+        process.exit(1);
+      }
       const filtered = filterByTags(entries, selectedTags);
       if (filtered.length === 0) {
         console.log('No keys matched the given tags.');
@@ -50,6 +54,10 @@ export function registerTagCommand(program: Command): void {
       const tagDefs = parseTagDefs(opts.defs);
       const entries = tagEnvMap(env, tagDefs);
       const grouped = groupByTag(entries);
+      if (Object.keys(grouped).length === 0) {
+        console.log('No tags matched.');
+        return;
+      }
       for (const [tag, items] of Object.entries(grouped)) {
         console.log(`\n[${tag}]`);
         for (const e of items) console.log(`  ${e.key}`);
