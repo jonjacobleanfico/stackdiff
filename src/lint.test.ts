@@ -39,6 +39,13 @@ describe('lintEnvMap', () => {
     const result = lintEnvMap({ API_SECRET: 'a-very-long-secret-value' });
     expect(result.passed).toBe(true);
   });
+
+  it('returns passed=false when any error-level issue exists', () => {
+    // Ensure passed reflects the presence of errors, not just warnings/infos
+    const result = lintEnvMap({ API_KEY: 'x', APP_NAME: 'my app', OPTIONAL_FLAG: '' });
+    const hasError = result.issues.some((i) => i.severity === 'error');
+    expect(result.passed).toBe(!hasError);
+  });
 });
 
 describe('lintBoth', () => {
@@ -46,6 +53,13 @@ describe('lintBoth', () => {
     const both = lintBoth({ KEY: 'val' }, { OTHER: 'val2' });
     expect(both.a).toBeDefined();
     expect(both.b).toBeDefined();
+  });
+
+  it('lints each env independently', () => {
+    // env a has an error, env b is clean
+    const both = lintBoth({ API_SECRET: 'x' }, { DATABASE_URL: 'postgres://localhost/db' });
+    expect(both.a.passed).toBe(false);
+    expect(both.b.passed).toBe(true);
   });
 });
 
