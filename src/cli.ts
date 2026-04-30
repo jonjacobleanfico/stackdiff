@@ -28,11 +28,7 @@ program
         console.log(formatSummary(result));
       }
 
-      const hasChanges =
-        result.added.length > 0 ||
-        result.removed.length > 0 ||
-        result.changed.length > 0;
-
+      const hasChanges = hasAnyChanges(result);
       process.exit(hasChanges ? 1 : 0);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -40,5 +36,12 @@ program
       process.exit(2);
     }
   });
+
+/**
+ * Returns true if the comparison result contains any added, removed, or changed variables.
+ */
+function hasAnyChanges(result: { added: unknown[]; removed: unknown[]; changed: unknown[] }): boolean {
+  return result.added.length > 0 || result.removed.length > 0 || result.changed.length > 0;
+}
 
 program.parse(process.argv);
