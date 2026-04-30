@@ -34,6 +34,11 @@ describe('parseTemplate', () => {
     expect(Object.keys(t)).not.toContain('');
     expect(Object.keys(t).length).toBe(5);
   });
+
+  it('returns empty object for empty input', () => {
+    const t = parseTemplate('');
+    expect(Object.keys(t).length).toBe(0);
+  });
 });
 
 describe('checkAgainstTemplate', () => {
@@ -62,5 +67,13 @@ describe('checkAgainstTemplate', () => {
     const result = checkAgainstTemplate(env, template);
     expect(result.missing).toHaveLength(0);
     expect(result.extra).toHaveLength(0);
+  });
+
+  it('reports all required keys as missing when env is empty', () => {
+    const result = checkAgainstTemplate({}, template);
+    expect(result.missing).toContain('DB_HOST');
+    expect(result.missing).toContain('DB_PASS');
+    expect(result.missing).toContain('APP_ENV');
+    expect(result.usingDefault).toContain('DB_PORT');
   });
 });
